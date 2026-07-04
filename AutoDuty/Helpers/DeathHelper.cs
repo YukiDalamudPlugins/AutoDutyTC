@@ -20,6 +20,8 @@ namespace AutoDuty.Helpers
             get => _deathState;
             set
             {
+                Multibox.MultiboxUtility.IsDead(value == PlayerLifeState.Dead);
+
                 if (Plugin.Configuration.DutyModeEnum.EqualsAny(DutyMode.Regular, DutyMode.Trial, DutyMode.Raid) && !Plugin.Configuration.Unsynced)
                     return;
                 else if (value == PlayerLifeState.Dead)

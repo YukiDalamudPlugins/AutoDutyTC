@@ -66,6 +66,8 @@ public class MainWindow : Window, IDisposable
 
     internal static void LoopsConfig()
     {
+        using ImRaii.IEndObject _ = ImRaii.Disabled(Multibox.MultiboxUtility.Config.MultiBox && !Multibox.MultiboxUtility.Config.Host);
+
         if ((Plugin.Configuration.UseSliderInputs && ImGui.SliderInt(Loc.Get("MainTab.Times"), ref Plugin.Configuration.LoopTimes, 0, 100)) || (!Plugin.Configuration.UseSliderInputs && ImGui.InputInt(Loc.Get("MainTab.Times"), ref Plugin.Configuration.LoopTimes)))
             Plugin.Configuration.Save();
     }

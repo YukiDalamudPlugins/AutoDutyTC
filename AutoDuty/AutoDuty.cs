@@ -16,6 +16,7 @@ using ECommons;
 using ECommons.DalamudServices;
 using AutoDuty.Windows;
 using AutoDuty.IPC;
+using AutoDuty.Multibox;
 using AutoDuty.External;
 using AutoDuty.Helpers;
 using ECommons.Throttlers;
@@ -123,6 +124,14 @@ public sealed class AutoDuty : IDalamudPlugin
                     break;
                 case Stage.Waiting_For_Combat:
                     BossMod_IPCSubscriber.SetRange(Plugin.Configuration.MaxDistanceToTargetFloat);
+                    break;
+                case Stage.Reading_Path:
+                    if (_stage is not Stage.Waiting_For_Combat and not Stage.Revived and not Stage.Looping and not Stage.Idle)
+                        MultiboxUtility.MultiboxBlockingNextStep = true;
+                    break;
+                case Stage.Idle:
+                    if (VNavmesh_IPCSubscriber.Path_NumWaypoints() > 0)
+                        VNavmesh_IPCSubscriber.Path_Stop();
                     break;
             }
             _stage = value;
@@ -417,19 +426,25 @@ public sealed class AutoDuty : IDalamudPlugin
                 }
             }
 
-            Actions.Clear();
-            if (!ContentPathsManager.DictionaryPaths.TryGetValue(Svc.ClientState.TerritoryType, out ContentPathsManager.ContentPathContainer? container))
+            if (!MultiboxUtility.Config.MultiBox || !MultiboxUtility.Config.SynchronizePath || MultiboxUtility.Config.Host)
             {
-                PathFile = $"{PathsDirectory.FullName}{Path.DirectorySeparatorChar}({Svc.ClientState.TerritoryType}) {CurrentTerritoryContent?.EnglishName?.Replace(":", "")}.json";
-                return;
+                Actions.Clear();
+                if (!ContentPathsManager.DictionaryPaths.TryGetValue(Svc.ClientState.TerritoryType, out ContentPathsManager.ContentPathContainer? container))
+                {
+                    PathFile = $"{PathsDirectory.FullName}{Path.DirectorySeparatorChar}({Svc.ClientState.TerritoryType}) {CurrentTerritoryContent?.EnglishName?.Replace(":", "")}.json";
+                    return;
+                }
+
+                ContentPathsManager.DutyPath? path = CurrentPath < 0 ?
+                                                         container.SelectPath(out CurrentPath) :
+                                                         container.Paths[CurrentPath > -1 ? CurrentPath : 0];
+
+                PathFile = path?.FilePath ?? "";
+                Actions = [.. path?.Actions];
+
+                if (MultiboxUtility.Config.MultiBox && MultiboxUtility.Config.SynchronizePath && MultiboxUtility.Config.Host)
+                    MultiboxUtility.Server.SendPath();
             }
-
-            ContentPathsManager.DutyPath? path = CurrentPath < 0 ?
-                                                     container.SelectPath(out CurrentPath) :
-                                                     container.Paths[CurrentPath > -1 ? CurrentPath : 0];
-
-            PathFile = path?.FilePath ?? "";
-            Actions = [.. path?.Actions];
             //Svc.Log.Info($"Loading Path: {CurrentPath} {ListBoxPOSText.Count}");
         }
         catch (Exception e)
@@ -461,6 +476,21 @@ public sealed class AutoDuty : IDalamudPlugin
 
     private void ClientState_TerritoryChanged(ushort t)
     {
+        if (MultiboxUtility.Config.MultiBox)
+        {
+            bool isDuty = ContentHelper.DictionaryContent.ContainsKey(t);
+            if (!MultiboxUtility.Config.Host)
+            {
+                if (isDuty)
+                    this.Run(t, 1);
+            }
+            else
+            {
+                if (!isDuty)
+                    MultiboxUtility.Server.ExitDuty();
+            }
+        }
+
         if (Stage == Stage.Stopped) return;
 
         Svc.Log.Debug($"ClientState_TerritoryChanged: t={t}");
@@ -757,6 +787,16 @@ public sealed class AutoDuty : IDalamudPlugin
             TaskManager.Enqueue(() => PlayerHelper.IsReadyFull, "Loop-WaitIsReadyFull");
         }
 
+        if (MultiboxUtility.Config is { MultiBox: true, Host: false } && !Configuration.EnableBetweenLoopActions)
+            AutoConsume();
+
+        if (MultiboxUtility.Config.MultiBox)
+        {
+            if (MultiboxUtility.Config.Host)
+                MultiboxUtility.MultiboxBlockingNextStep = true;
+            else
+                TaskManager.Enqueue(() => MultiboxUtility.MultiboxBlockingNextStep = true);
+        }
 
         if (!queue)
         {
@@ -795,6 +835,7 @@ public sealed class AutoDuty : IDalamudPlugin
                 return;
             }
         }
+        TaskManager.Enqueue(() => !MultiboxUtility.MultiboxBlockingNextStep, int.MaxValue, "Loop-WaitMultiboxClients");
         TaskManager.Enqueue(() => Svc.Log.Debug($"Registering New Loop"));
         Queue(CurrentTerritoryContent);
         TaskManager.Enqueue(() => Svc.Log.Debug($"Incrementing LoopCount, Setting Action Var, Wait for CorrectTerritory, PlayerIsValid, DutyStarted, and NavIsReady"));
@@ -965,6 +1006,30 @@ public sealed class AutoDuty : IDalamudPlugin
 
         PathAction = Actions[Indexer];
 
+        if (MultiboxUtility.MultiboxBlockingNextStep)
+        {
+            if (PartyHelper.PartyInCombat() && StopForCombat)
+            {
+                if (Configuration is { AutoManageRotationPluginState: true, UsingAlternativeRotationPlugin: false })
+                    SetRotationPluginSettings(true);
+                VNavmesh_IPCSubscriber.Path_Stop();
+
+                if (PathAction.Name.Equals("Boss") && PathAction.Position != Vector3.Zero && ObjectHelper.BelowDistanceToPlayer(PathAction.Position, 50, 10))
+                {
+                    BossObject = ObjectHelper.GetBossObject(25);
+                    if (BossObject != null)
+                    {
+                        if (MultiboxUtility.Config.Host)
+                            MultiboxUtility.MultiboxBlockingNextStep = false;
+                        Stage = Stage.Action;
+                        return;
+                    }
+                }
+                Stage = Stage.Waiting_For_Combat;
+            }
+            return;
+        }
+
         bool sync = !this.Configuration.Unsynced || !this.Configuration.DutyModeEnum.EqualsAny(DutyMode.Raid, DutyMode.Regular, DutyMode.Trial);
         if (PathAction.Tag.HasFlag(ActionTag.Unsynced) && sync)
         {
@@ -1007,6 +1072,9 @@ public sealed class AutoDuty : IDalamudPlugin
             Indexer++;
             return;
         }
+
+        if (MultiboxUtility.Config.Host)
+            MultiboxUtility.MultiboxBlockingNextStep = false;
 
         if (PathAction.Position == Vector3.Zero)
         {
@@ -1604,6 +1672,8 @@ public sealed class AutoDuty : IDalamudPlugin
 
     public void Dispose()
     {
+        if (MultiboxUtility.Config != null)
+            MultiboxUtility.Config.MultiBox = false;
         GitHubHelper.Dispose();
         StopAndResetALL();
         Svc.Framework.Update -= Framework_Update;

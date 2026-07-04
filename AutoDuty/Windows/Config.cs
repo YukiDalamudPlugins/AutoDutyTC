@@ -50,6 +50,9 @@ public class ConfigurationMain : IEzConfig
     internal string Language { get; set; } = LocalizationManager.BASE_LANGUAGE;
 
     [JsonProperty]
+    public Multibox.MultiboxUtility.MultiboxConfiguration multibox = new();
+
+    [JsonProperty]
     private string activeProfileName = CONFIGNAME_BARE;
     
     public  string ActiveProfileName => this.activeProfileName;
@@ -466,7 +469,7 @@ public class Configuration
 
         unsync ??= this.Unsynced && this.DutyModeEnum.EqualsAny(DutyMode.Raid, DutyMode.Regular, DutyMode.Trial);
 
-        return unsync.Value && this.TreatUnsyncAsW2W;
+        return Multibox.MultiboxUtility.Config.MultiBox || unsync.Value && this.TreatUnsyncAsW2W;
     }
 
 
@@ -663,6 +666,7 @@ public static class ConfigTab
 
     private static bool overlayHeaderSelected      = false;
     private static bool devHeaderSelected          = false;
+    private static bool multiboxHeaderSelected     = false;
     private static bool dutyConfigHeaderSelected   = false;
     private static bool bmaiSettingHeaderSelected  = false;
     private static bool wrathSettingHeaderSelected = false;
@@ -2162,6 +2166,8 @@ public static class ConfigTab
             }
         }
 
+        DrawMultiboxSection();
+
         void MakeCommands(string checkbox, ref bool execute, ref List<string> commands, ref string curCommand)
         {
             if (ImGui.Checkbox($"{checkbox}{(execute ? ":" : string.Empty)} ", ref execute))
@@ -2216,6 +2222,247 @@ public static class ConfigTab
                 ImGui.EndListBox();
                 ImGui.Unindent();
             }
+        }
+    }
+
+    private static unsafe void DrawMultiboxSection()
+    {
+        ImGui.Separator();
+        ImGui.Spacing();
+        ImGui.PushStyleVar(ImGuiStyleVar.SelectableTextAlign, new System.Numerics.Vector2(0.5f, 0.5f));
+
+        if (ImGui.Selectable(Loc.Get("ConfigTab.Multiboxing.Header"), multiboxHeaderSelected, ImGuiSelectableFlags.DontClosePopups))
+            multiboxHeaderSelected = !multiboxHeaderSelected;
+
+        ImGui.PopStyleVar();
+        if (ImGui.IsItemHovered())
+            ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+
+        if (!multiboxHeaderSelected)
+            return;
+
+        ImGui.TextColored(GradientColor.Get(ImGuiHelper.ExperimentalColor, ImGuiHelper.ExperimentalColor2, 500), Loc.Get("ConfigTab.Multiboxing.ExperimentalWarning"));
+
+        ImGuiEx.TextWrapped(Loc.Get("ConfigTab.Multiboxing.Step1"));
+        ImGuiEx.TextWrapped(Loc.Get("ConfigTab.Multiboxing.Step2"));
+        ImGuiEx.TextWrapped(Loc.Get("ConfigTab.Multiboxing.Step3"));
+        ImGui.Separator();
+
+        uint text     = ImGui.GetColorU32(ImGuiCol.Text);
+        uint disabled = ImGui.GetColorU32(ImGuiCol.TextDisabled);
+
+        Multibox.TransportType transportType = Multibox.MultiboxUtility.Config.TransportType;
+        using (ImRaii.PushColor(ImGuiCol.Text, transportType == Multibox.TransportType.NamedPipe ? text : disabled))
+        {
+            ImGui.TextWrapped(Loc.Get("ConfigTab.Multiboxing.NamedPipes"));
+            ImGuiEx.TextWrapped(Loc.Get("ConfigTab.Multiboxing.Step4Pipes"));
+            ImGuiEx.TextWrapped(Loc.Get("ConfigTab.Multiboxing.Step5Pipes"));
+        }
+        ImGui.Separator();
+        using (ImRaii.PushColor(ImGuiCol.Text, transportType == Multibox.TransportType.Tcp ? text : disabled))
+        {
+            ImGui.TextWrapped(Loc.Get("ConfigTab.Multiboxing.TCP"));
+            ImGuiEx.TextWrapped(Loc.Get("ConfigTab.Multiboxing.Step4TCP"));
+            ImGuiEx.TextWrapped(Loc.Get("ConfigTab.Multiboxing.Step5TCP"));
+            if (OperatingSystem.IsWindows())
+                ImGui.TextWrapped(Loc.Get("ConfigTab.Multiboxing.UACWarning"));
+        }
+
+        ImGui.Separator();
+        ImGuiEx.TextWrapped(Loc.Get("ConfigTab.Multiboxing.Step6"));
+        ImGuiEx.TextWrapped(Loc.Get("ConfigTab.Multiboxing.Step7"));
+        ImGuiEx.TextWrapped(Loc.Get("ConfigTab.Multiboxing.Step8"));
+
+        bool multiBox = Multibox.MultiboxUtility.Config.MultiBox;
+        if (ImGui.Checkbox(nameof(Multibox.MultiboxUtility.Config.MultiBox), ref multiBox))
+        {
+            Multibox.MultiboxUtility.Config.MultiBox = multiBox;
+            Configuration.Save();
+        }
+
+        using (ImRaii.Disabled(Multibox.MultiboxUtility.Config.MultiBox))
+        {
+            ImGui.Indent();
+            if (ImGuiEx.EnumCombo(Loc.Get("ConfigTab.Multiboxing.TransportType"), ref transportType))
+            {
+                Multibox.MultiboxUtility.Config.TransportType = transportType;
+                Configuration.Save();
+            }
+
+            ImGuiComponents.HelpMarker(Loc.Get("ConfigTab.Multiboxing.TransportTypeHelp"));
+
+            switch (transportType)
+            {
+                case Multibox.TransportType.NamedPipe:
+                {
+                    string pipeName = Multibox.MultiboxUtility.Config.PipeName;
+                    if (ImGui.InputText(Loc.Get("ConfigTab.Multiboxing.PipeName"), ref pipeName, 100))
+                    {
+                        Multibox.MultiboxUtility.Config.PipeName = pipeName;
+                        Configuration.Save();
+                    }
+
+                    ImGui.SameLine();
+                    if (ImGui.Button($"{Loc.Get("ConfigTab.Multiboxing.Reset")}##MultiboxResetPipeName"))
+                    {
+                        Multibox.MultiboxUtility.Config.PipeName = "AutoDutyPipe";
+                        Configuration.Save();
+                    }
+
+                    if (!Multibox.MultiboxUtility.Config.Host)
+                    {
+                        string serverName = Multibox.MultiboxUtility.Config.ServerName;
+                        if (ImGui.InputText(Loc.Get("ConfigTab.Multiboxing.ServerName"), ref serverName, 100))
+                        {
+                            Multibox.MultiboxUtility.Config.ServerName = serverName;
+                            Configuration.Save();
+                        }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button($"{Loc.Get("ConfigTab.Multiboxing.Reset")}##MultiboxResetServerName"))
+                        {
+                            Multibox.MultiboxUtility.Config.ServerName = ".";
+                            Configuration.Save();
+                        }
+                    }
+
+                    break;
+                }
+                case Multibox.TransportType.Tcp:
+                {
+                    if (!Multibox.MultiboxUtility.Config.Host)
+                    {
+                        string serverAddress = Multibox.MultiboxUtility.Config.ServerAddress;
+                        if (ImGui.InputText(Loc.Get("ConfigTab.Multiboxing.ServerAddress"), ref serverAddress, 100))
+                        {
+                            Multibox.MultiboxUtility.Config.ServerAddress = serverAddress;
+                            Configuration.Save();
+                        }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button($"{Loc.Get("ConfigTab.Multiboxing.Reset")}##MultiboxResetServerAddress"))
+                        {
+                            Multibox.MultiboxUtility.Config.ServerAddress = "127.0.0.1";
+                            Configuration.Save();
+                        }
+                    }
+
+                    int serverPort = Multibox.MultiboxUtility.Config.ServerPort;
+                    if (ImGui.InputInt(Loc.Get("ConfigTab.Multiboxing.ServerPort"), ref serverPort))
+                    {
+                        Multibox.MultiboxUtility.Config.ServerPort = serverPort;
+                        Configuration.Save();
+                    }
+
+                    ImGui.SameLine();
+                    if (ImGui.Button($"{Loc.Get("ConfigTab.Multiboxing.Reset")}##MultiboxResetServerPort"))
+                    {
+                        Multibox.MultiboxUtility.Config.ServerPort = 1716;
+                        Configuration.Save();
+                    }
+
+                    break;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            bool host = Multibox.MultiboxUtility.Config.Host;
+            if (ImGui.Checkbox($"{Loc.Get("ConfigTab.Multiboxing.Host")}##MultiboxHost", ref host))
+            {
+                Multibox.MultiboxUtility.Config.Host = host;
+                Configuration.Save();
+            }
+
+            ImGui.Unindent();
+        }
+
+        bool synchronizePath = Multibox.MultiboxUtility.Config.SynchronizePath;
+        if (ImGui.Checkbox($"{Loc.Get("ConfigTab.Multiboxing.SynchronizePaths")}##MultiboxSynchronizePaths", ref synchronizePath))
+        {
+            Multibox.MultiboxUtility.Config.SynchronizePath = synchronizePath;
+            Configuration.Save();
+        }
+
+        ImGuiComponents.HelpMarker(Loc.Get("ConfigTab.Multiboxing.SynchronizePathsHelp"));
+
+        if (Multibox.MultiboxUtility.Config.MultiBox)
+        {
+            ImGui.Indent();
+            ImGuiEx.Text(string.Format(Loc.Get("ConfigTab.Multiboxing.Blocking"), Multibox.MultiboxUtility.stepBlock));
+
+            if (Multibox.MultiboxUtility.Config.Host)
+            {
+                ImGui.Separator();
+
+                ImGui.Columns(5);
+
+                ImGuiEx.Text(Loc.Get("ConfigTab.Multiboxing.Name"));
+                ImGui.NextColumn();
+                ImGuiEx.Text(Loc.Get("ConfigTab.Multiboxing.InParty"));
+                ImGui.NextColumn();
+                ImGuiEx.Text(Loc.Get("ConfigTab.Multiboxing.Job"));
+                ImGui.NextColumn();
+                ImGuiEx.Text(Loc.Get("ConfigTab.Multiboxing.BlockingStatus"));
+                ImGui.NextColumn();
+                ImGuiEx.Text(Loc.Get("ConfigTab.Multiboxing.LastHeard"));
+                ImGui.Separator();
+                ImGui.NextColumn();
+
+                FFXIVClientStructs.FFXIV.Client.UI.Info.InfoProxyPartyMember* partyMembers = FFXIVClientStructs.FFXIV.Client.UI.Info.InfoProxyPartyMember.Instance();
+
+                for (int i = 0; i < Multibox.MultiboxUtility.Server.MAX_SERVERS; i++)
+                {
+                    Multibox.MultiboxUtility.Server.ClientInfo? info = Multibox.MultiboxUtility.Server.clients[i];
+
+                    if (info != null)
+                    {
+                        ImGuiEx.Text(info.CName);
+                        ImGui.NextColumn();
+                        bool inParty = PartyHelper.IsPartyMember(info.CID);
+                        ImGuiEx.Text(inParty ? ImGuiHelper.StateGoodColor : ImGuiHelper.StateBadColor, inParty ? Loc.Get("ConfigTab.Multiboxing.InPartyYes") : Loc.Get("ConfigTab.Multiboxing.InPartyNo"));
+                        ImGui.NextColumn();
+                        if (partyMembers != null)
+                        {
+                            FFXIVClientStructs.FFXIV.Client.UI.Info.InfoProxyCommonList.CharacterData* data = partyMembers->GetEntryByContentId(info.CID);
+                            if (data != null)
+                            {
+                                Job job = (Job)data->Job;
+                                ImGuiEx.Text(job.GetCombatRole() switch
+                                {
+                                    ECommons.GameFunctions.CombatRole.Tank => ImGuiHelper.RoleTankColor,
+                                    ECommons.GameFunctions.CombatRole.Healer => ImGuiHelper.RoleHealerColor,
+                                    ECommons.GameFunctions.CombatRole.DPS => ImGuiHelper.RoleDPSColor,
+                                    _ => ImGuiHelper.StateBadColor
+                                }, job.ToCustomString());
+                            }
+                        }
+
+                        ImGui.NextColumn();
+                        ImGuiEx.Text(Multibox.MultiboxUtility.Server.stepConfirms[i].ToString());
+                        ImGui.NextColumn();
+                        double totalSeconds = DateTime.Now.Subtract(Multibox.MultiboxUtility.Server.keepAlives[i]).TotalSeconds;
+                        ImGuiEx.Text(totalSeconds < 10 ? ImGuiHelper.StateGoodColor : ImGuiHelper.StateBadColor, $"{totalSeconds:F3}s ago");
+                        ImGui.NextColumn();
+                    }
+                    else
+                    {
+                        ImGui.Text(string.Format(Loc.Get("ConfigTab.Multiboxing.NoInfo"), i));
+                        for (int j = 0; j < 5; j++)
+                            ImGui.NextColumn();
+                    }
+                }
+                ImGui.Columns(1);
+
+                using (ImRaii.Disabled(!Plugin.InDungeon))
+                {
+                    if (ImGui.Button($"{Loc.Get("ConfigTab.Multiboxing.ResynchronizeStep")}##MultiboxSynchronizeStep"))
+                        Multibox.MultiboxUtility.Server.SendStepStart();
+                }
+                ImGui.Separator();
+            }
+
+            ImGui.Unindent();
         }
     }
 

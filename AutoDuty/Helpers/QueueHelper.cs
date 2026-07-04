@@ -17,6 +17,14 @@ namespace AutoDuty.Helpers
 
     internal unsafe class QueueHelper : ActiveHelperBase<QueueHelper>
     {
+        internal static void InvokeAcceptOnly()
+        {
+            _dutyMode = DutyMode.None;
+            Svc.Log.Info("Queueing: Accepting only");
+            Instance.Start();
+            Plugin.Action = "Queueing: Waiting to accept";
+        }
+
         internal static void Invoke(Content? content, DutyMode dutyMode)
         {
             if (State != ActionState.Running && content != null && dutyMode != DutyMode.None)
@@ -217,6 +225,9 @@ namespace AutoDuty.Helpers
                 _allConditionsMetToJoin = true;
                 Svc.Log.Debug("Queue Helper - All Conditions Met, Clicking Join");
                 AddonHelper.FireCallBack((AtkUnitBase*)_addonContentsFinder, true, 12, 0);
+
+                if (Multibox.MultiboxUtility.Config is { MultiBox: true, Host: true })
+                    Multibox.MultiboxUtility.Server.Queue();
                 return;
             }
             Svc.Log.Debug("end");
@@ -224,7 +235,7 @@ namespace AutoDuty.Helpers
 
         protected override void HelperUpdate(IFramework framework)
         {
-            if (_content == null || Plugin.InDungeon || Svc.ClientState.TerritoryType == _content?.TerritoryType)
+            if (Plugin.InDungeon || _dutyMode != DutyMode.None && (_content == null || Svc.ClientState.TerritoryType == _content?.TerritoryType))
                 Stop();
 
             if (!EzThrottler.Throttle("QueueHelper", 250)|| !PlayerHelper.IsReadyFull || ContentsFinderConfirm() || Conditions.Instance()->InDutyQueue) return;

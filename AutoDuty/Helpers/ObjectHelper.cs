@@ -20,6 +20,9 @@ namespace AutoDuty.Helpers
 
     internal static class ObjectHelper
     {
+        public static unsafe IGameObject? GetObjectFrom(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* ptr) =>
+            ptr == null ? null : Svc.Objects.FirstOrDefault(x => x.Address == (IntPtr)ptr);
+
         internal static bool TryGetObjectByDataId(uint dataId, out IGameObject? gameObject) => (gameObject = Svc.Objects.OrderBy(GetDistanceToPlayer).FirstOrDefault(x => x.DataId == dataId)) != null;
 
         internal static List<IGameObject>? GetObjectsByObjectKind(ObjectKind objectKind) => [.. Svc.Objects.OrderBy(GetDistanceToPlayer).Where(o => o.ObjectKind == objectKind)];
