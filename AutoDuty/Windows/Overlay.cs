@@ -7,6 +7,7 @@ using ImGuiNET;
 using System.Numerics;
 using static AutoDuty.AutoDuty;
 using ECommons.ImGuiMethods;
+using ECommons.LanguageHelpers;
 
 namespace AutoDuty.Windows;
 
@@ -69,7 +70,7 @@ public unsafe class Overlay : Window
                 if (Plugin.Stage == 0)
                 {
                     if (!Plugin.States.HasFlag(PluginState.Navigating) && !Plugin.States.HasFlag(PluginState.Looping))
-                        if (ImGui.Button("Start"))
+                        if (ImGui.Button("Start".Loc()))
                         {
                             Plugin.LoadPath();
                             Plugin.Run(Svc.ClientState.TerritoryType);
@@ -106,7 +107,7 @@ public unsafe class Overlay : Window
                     Plugin.Configuration.Save();
                 }
 
-                hideText = ImGui.IsItemHovered() ? "Hide" : "";
+                hideText = ImGui.IsItemHovered() ? "Hide".Loc() : "";
 
                 ImGui.SameLine(0, 5);
 
@@ -127,7 +128,7 @@ public unsafe class Overlay : Window
                     Plugin.Configuration.Save();
                 }
 
-                hideTextAction = ImGui.IsItemHovered() ? "Hide" : "";
+                hideTextAction = ImGui.IsItemHovered() ? "Hide".Loc() : "";
 
                 ImGui.SameLine(0, 5);
                 ImGui.TextColored(new Vector4(0, 255f, 0, 1), Plugin.Action.Length > 40 ? Plugin.Action[..37] + "..." : Plugin.Action);

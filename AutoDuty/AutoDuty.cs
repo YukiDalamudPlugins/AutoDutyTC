@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.IO;
 using ECommons;
 using ECommons.DalamudServices;
+using ECommons.LanguageHelpers;
 using AutoDuty.Windows;
 using AutoDuty.IPC;
 using AutoDuty.External;
@@ -208,6 +209,7 @@ public sealed class AutoDuty : IDalamudPlugin
         {
             Plugin = this;
             ECommonsMain.Init(PluginInterface, Plugin, Module.DalamudReflector, Module.ObjectFunctions);
+            Localization.Init("ChineseTraditional");
             PictoService.Initialize(PluginInterface);
 
             this.isDev = PluginInterface.IsDev;
