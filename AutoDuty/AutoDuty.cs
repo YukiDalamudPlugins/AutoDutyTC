@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.IO;
 using ECommons;
 using ECommons.DalamudServices;
-using ECommons.LanguageHelpers;
 using AutoDuty.Windows;
 using AutoDuty.IPC;
 using AutoDuty.External;
@@ -209,7 +208,6 @@ public sealed class AutoDuty : IDalamudPlugin
         {
             Plugin = this;
             ECommonsMain.Init(PluginInterface, Plugin, Module.DalamudReflector, Module.ObjectFunctions);
-            Localization.Init("ChineseTraditional");
             PictoService.Initialize(PluginInterface);
 
             this.isDev = PluginInterface.IsDev;
@@ -217,6 +215,8 @@ public sealed class AutoDuty : IDalamudPlugin
             //EzConfig.Init<ConfigurationMain>();
             EzConfig.DefaultSerializationFactory = new AutoDutySerializationFactory();
             (ConfigurationMain.Instance = EzConfig.Init<ConfigurationMain>()).Init();
+
+            LocalizationManager.Initialize();
 
 
 
@@ -272,29 +272,29 @@ public sealed class AutoDuty : IDalamudPlugin
             Svc.Commands.AddHandler("/ad", new CommandInfo(OnCommand) { });
             Svc.Commands.AddHandler(CommandName, new CommandInfo(OnCommand)
             {
-                HelpMessage = "\n/autoduty or /ad -> " + "opens main window".Loc() + "\n" +
-                "/autoduty or /ad config or cfg -> " + "opens config window / modifies config".Loc() + "\n" +
-                "/autoduty or /ad start -> " + "starts autoduty when in a Duty".Loc() + "\n" +
-                "/autoduty or /ad stop -> " + "stops everything".Loc() + "\n" +
-                "/autoduty or /ad pause -> " + "pause route".Loc() + "\n" +
-                "/autoduty or /ad resume -> " + "resume route".Loc() + "\n" +
-                "/autoduty or /ad turnin -> " + "GC Turnin".Loc() + "\n" +
-                "/autoduty or /ad desynth -> " + "Desynth's your inventory".Loc() + "\n" +
-                "/autoduty or /ad repair -> " + "Repairs your gear".Loc() + "\n" +
-                "/autoduty or /ad equiprec-> " + "Equips recommended gear".Loc() + "\n" +
-                "/autoduty or /ad extract -> " + "Extract's materia from equipment".Loc() + "\n" +
-                "/autoduty or /ad turnin -> " + "GC Turnin".Loc() + "\n" +
-                "/autoduty or /ad goto -> " + "goes to".Loc() + "\n" +
-                "/autoduty or /ad dataid -> " + "Logs and copies your target's dataid to clipboard".Loc() + "\n" +
-                "/autoduty or /ad exitduty -> " + "exits duty".Loc() + "\n" +
-                "/autoduty or /ad queue -> " + "queues duty".Loc() + "\n" +
-                "/autoduty or /ad moveto -> " + "move's to territorytype and location sent".Loc() + "\n" +
-                "/autoduty or /ad overlay -> " + "opens overlay".Loc() + "\n" +
-                "/autoduty or /ad overlay lock-> " + "toggles locking the overlay".Loc() + "\n" +
-                "/autoduty or /ad overlay nobg-> " + "toggles the overlay's background".Loc() + "\n" +
-                "/autoduty or /ad movetoflag -> " + "moves to the flag map marker".Loc() + "\n" +
-                "/autoduty or /ad run -> " + "starts auto duty in territory type specified".Loc() + "\n" +
-                "/autoduty or /ad tt -> " + "logs and copies to clipboard the Territory Type number for duty specified".Loc() + "\n"
+                HelpMessage = "\n/autoduty or /ad -> " + Loc.Get("Common.Commands.OpenMainWindow") + "\n" +
+                "/autoduty or /ad config or cfg -> " + Loc.Get("Common.Commands.Config") + "\n" +
+                "/autoduty or /ad start -> " + Loc.Get("Common.Commands.Start") + "\n" +
+                "/autoduty or /ad stop -> " + Loc.Get("Common.Commands.Stop") + "\n" +
+                "/autoduty or /ad pause -> " + Loc.Get("Common.Commands.Pause") + "\n" +
+                "/autoduty or /ad resume -> " + Loc.Get("Common.Commands.Resume") + "\n" +
+                "/autoduty or /ad turnin -> " + Loc.Get("Common.Commands.Turnin") + "\n" +
+                "/autoduty or /ad desynth -> " + Loc.Get("Common.Commands.Desynth") + "\n" +
+                "/autoduty or /ad repair -> " + Loc.Get("Common.Commands.Repair") + "\n" +
+                "/autoduty or /ad equiprec-> " + Loc.Get("Common.Commands.EquipRec") + "\n" +
+                "/autoduty or /ad extract -> " + Loc.Get("Common.Commands.Extract") + "\n" +
+                "/autoduty or /ad turnin -> " + Loc.Get("Common.Commands.Turnin") + "\n" +
+                "/autoduty or /ad goto -> " + Loc.Get("Common.Commands.Goto") + "\n" +
+                "/autoduty or /ad dataid -> " + Loc.Get("Common.Commands.DataId") + "\n" +
+                "/autoduty or /ad exitduty -> " + Loc.Get("Common.Commands.ExitDuty") + "\n" +
+                "/autoduty or /ad queue -> " + Loc.Get("Common.Commands.Queue") + "\n" +
+                "/autoduty or /ad moveto -> " + Loc.Get("Common.Commands.MoveTo") + "\n" +
+                "/autoduty or /ad overlay -> " + Loc.Get("Common.Commands.Overlay") + "\n" +
+                "/autoduty or /ad overlay lock-> " + Loc.Get("Common.Commands.OverlayLock") + "\n" +
+                "/autoduty or /ad overlay nobg-> " + Loc.Get("Common.Commands.OverlayNoBg") + "\n" +
+                "/autoduty or /ad movetoflag -> " + Loc.Get("Common.Commands.MoveToFlag") + "\n" +
+                "/autoduty or /ad run -> " + Loc.Get("Common.Commands.Run") + "\n" +
+                "/autoduty or /ad tt -> " + Loc.Get("Common.Commands.TT") + "\n"
             });
 
             PluginInterface.UiBuilder.Draw += DrawUI;

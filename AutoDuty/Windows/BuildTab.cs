@@ -17,7 +17,6 @@ using AutoDuty.Data;
 using static AutoDuty.Windows.MainWindow;
 using System.Diagnostics;
 using Dalamud.Interface.Utility;
-using ECommons.LanguageHelpers;
 using Pictomancy;
 
 namespace AutoDuty.Windows
@@ -42,7 +41,7 @@ namespace AutoDuty.Windows
         private static          bool                     _showAddActionUI    = false;
         private static          (string, string, string) _dropdownSelected   = (string.Empty, string.Empty, string.Empty);
         private static          int                      _buildListSelected  = -1;
-        private static          string                   _addActionButton    = "Add";
+        private static          string                   _addActionButton    = Loc.Get("BuildTab.Add");
         private static          bool                     _dragDrop           = false;
         private static          bool                     _noArgument         = false;
         private static          bool                     _comment            = false;
@@ -81,7 +80,8 @@ namespace AutoDuty.Windows
         private static void DrawPathElements()
         {
             using var d = ImRaii.Disabled(!Plugin.InDungeon || Plugin.Stage > 0 || !Player.Available);
-            ImGui.Text($"{"Build Path:".Loc()} ({Svc.ClientState.TerritoryType}) {(ContentHelper.DictionaryContent.TryGetValue(Svc.ClientState.TerritoryType, out var content) ? content.Name : TerritoryName.GetTerritoryName(Svc.ClientState.TerritoryType))}");
+            ImGui.Text(Loc.Get("BuildTab.BuildPath", Svc.ClientState.TerritoryType,
+                               ContentHelper.DictionaryContent.TryGetValue(Svc.ClientState.TerritoryType, out var content) ? content.Name : TerritoryName.GetTerritoryName(Svc.ClientState.TerritoryType)));
 
             string idText = $"({Svc.ClientState.TerritoryType}) ";
             ImGui.Text(idText);
@@ -96,7 +96,7 @@ namespace AutoDuty.Windows
 
             ImGui.SameLine();
             ImGui.Text($".json");
-            ImGui.Text("Changelog:".Loc());
+            ImGui.Text(Loc.Get("BuildTab.Changelog"));
             ImGui.SameLine();
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
             ImGui.InputText("##Changelog", ref _changelog, 200);
@@ -104,20 +104,20 @@ namespace AutoDuty.Windows
 
         private static void DrawButtons()
         {
-            if (ImGui.Button("Add POS".Loc()))
+            if (ImGui.Button(Loc.Get("BuildTab.AddPos")))
             {
                 _scrollBottom = true;
                 Plugin.Actions.Add(new PathAction { Name = "MoveTo", Position = Player.Position });
             }
             ImGui.SameLine(0, 5);
-            ImGuiComponents.HelpMarker("Adds a MoveTo step to the path, AutoDuty will Move to the specified position".Loc());
-            if (ImGuiEx.ButtonWrapped("Add Action".Loc()))
+            ImGuiComponents.HelpMarker(Loc.Get("BuildTab.AddPosTooltip"));
+            if (ImGuiEx.ButtonWrapped(Loc.Get("BuildTab.AddAction")))
             {
                 if (_showAddActionUI)
                     ClearAll();
                 ImGui.OpenPopup("AddActionPopup");
             }
-            ImGuiComponents.HelpMarker("Opens the Add Action popup menu to add action steps to the path".Loc());
+            ImGuiComponents.HelpMarker(Loc.Get("BuildTab.AddActionTooltip"));
             if (ImGui.BeginPopup("AddActionPopup"))
             {
                 if (ActionsList == null)
@@ -132,7 +132,7 @@ namespace AutoDuty.Windows
                         _argumentHint = item.Item2.Equals("false", StringComparison.InvariantCultureIgnoreCase) ? string.Empty : item.Item2;
                         _actionText = item.Item1;
                         _noArgument = item.Item2.Equals("false", StringComparison.InvariantCultureIgnoreCase);
-                        _addActionButton = "Add";
+                        _addActionButton = Loc.Get("BuildTab.Add");
                         _comment = item.Item1.Equals("<-- Comment -->", StringComparison.InvariantCultureIgnoreCase);
                         _position = Player.Available ? Player.Position : Vector3.Zero;
                         _actionTag = ActionTag.None;
@@ -169,39 +169,39 @@ namespace AutoDuty.Windows
                         _action = new() { Name = _actionText, Position = _position, Arguments = _arguments, Note = _note, Tag = _actionTag };
                         _showAddActionUI = true;
                     }
-                    ImGuiComponents.HelpMarker(item.Item3.Loc());
+                    ImGuiComponents.HelpMarker(item.Item3);
                 }
                 ImGui.EndPopup();
             }
-            if (_showAddActionUI && !ImGui.IsPopupOpen($"{"Add Action:".Loc()} ({_action?.Name})###AddActionUI"))
+            if (_showAddActionUI && !ImGui.IsPopupOpen($"{Loc.Get("BuildTab.AddActionPopupTitle")} ({_action?.Name})###AddActionUI"))
             {
                 ImGui.SetNextWindowSize(new Vector2(ImGui.CalcTextSize("X").X * 55, ImGui.GetTextLineHeight() * 7), ImGuiCond.FirstUseEver);
                 ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetCenter(), ImGuiCond.FirstUseEver, new(0.5f, 0.5f));
-                ImGui.OpenPopup($"{"Add Action:".Loc()} ({_action?.Name})###AddActionUI");
+                ImGui.OpenPopup($"{Loc.Get("BuildTab.AddActionPopupTitle")} ({_action?.Name})###AddActionUI");
             }
-            if (ImGui.BeginPopupModal($"{"Add Action:".Loc()} ({_action?.Name})###AddActionUI", ref _showAddActionUI))
+            if (ImGui.BeginPopupModal($"{Loc.Get("BuildTab.AddActionPopupTitle")} ({_action?.Name})###AddActionUI", ref _showAddActionUI))
             {
                 DrawAddActionUIPopup();
                 ImGui.EndPopup();
             }
             ImGui.SameLine(0, 5);
-            if (ImGuiEx.ButtonWrapped("Clear Path".Loc()))
+            if (ImGuiEx.ButtonWrapped(Loc.Get("BuildTab.ClearPath")))
             {
                 Plugin.Actions.Clear();
                 ClearAll();
             }
-            ImGuiComponents.HelpMarker("Clears the entire path, NOTE: there is no confirmation".Loc());
+            ImGuiComponents.HelpMarker(Loc.Get("BuildTab.ClearPathTooltip"));
             ImGui.SameLine(0, 5);
-            if (ImGuiEx.ButtonWrapped("Save Path".Loc()))
+            if (ImGuiEx.ButtonWrapped(Loc.Get("BuildTab.SavePath")))
             {
                 try
                 {
                     if (Plugin.Actions.Count < 1)
                     {
-                        Svc.Log.Error($"You must add at least one action to save the path, please add an action and try again");
+                        Svc.Log.Error(Loc.Get("BuildTab.SavePathError"));
                         return;
                     }
-                    Svc.Log.Info($"Saving {Plugin.PathFile}");
+                    Svc.Log.Info(Loc.Get("BuildTab.SavingPath", Plugin.PathFile));
 
                     PathFile? pathFile = null;
 
@@ -236,18 +236,18 @@ namespace AutoDuty.Windows
                     //throw;
                 }
             }
-            ImGuiComponents.HelpMarker("Saves the path to the path file specified or the default".Loc());
+            ImGuiComponents.HelpMarker(Loc.Get("BuildTab.SavePathTooltip"));
             ImGui.SameLine(0, 5);
-            if (ImGuiEx.ButtonWrapped("Load Path".Loc()))
+            if (ImGuiEx.ButtonWrapped(Loc.Get("BuildTab.LoadPath")))
             {
                 Plugin.LoadPath();
                 ClearAll();
             }
-            ImGuiComponents.HelpMarker("Loads the path".Loc());
+            ImGuiComponents.HelpMarker(Loc.Get("BuildTab.LoadPathTooltip"));
             ImGui.SameLine(0, 5);
             using (ImRaii.Disabled(Plugin.PathFile.IsNullOrEmpty()))
             {
-                if (ImGuiEx.ButtonWrapped("Open File".Loc()))
+                if (ImGuiEx.ButtonWrapped(Loc.Get("BuildTab.OpenFile")))
                     Process.Start("explorer",  Plugin.PathFile ?? string.Empty);
             }
         }
@@ -263,14 +263,14 @@ namespace AutoDuty.Windows
 
             using (ImRaii.Disabled(_arguments.Count == 0 && !_noArgument && !_comment))
             {
-                if (ImGuiEx.ButtonWrapped(_addActionButton.Loc()))
+                if (ImGuiEx.ButtonWrapped(_addActionButton))
                 {
                     if (_action.Name is "MoveToObject" or "Target" or "Interactable")
                     {
                         if (uint.TryParse(_arguments[0], out var dataId))
                             AddAction();
                         else
-                            ShowPopup("Error".Loc(), $"{_action.Name}{"'s must be uint's corresponding to the objects DataId".Loc()}", true);
+                            ShowPopup(Loc.Get("BuildTab.ErrorTitle"), Loc.Get("BuildTab.DataIdError", _action.Name), true);
                     }
                     else
                     {
@@ -279,11 +279,11 @@ namespace AutoDuty.Windows
                 }
             }
             ImGui.SameLine();
-            ImGuiEx.CheckboxWrapped("Dont Move".Loc(), ref _dontMove);
+            ImGuiEx.CheckboxWrapped(Loc.Get("BuildTab.DontMove"), ref _dontMove);
             ImGui.SameLine();
             using (ImRaii.Disabled(_buildListSelected < 0))
             {
-                if (ImGuiEx.ButtonWrapped("Delete".Loc()))
+                if (ImGuiEx.ButtonWrapped(Loc.Get("BuildTab.Delete")))
                 {
                     _deleteItem = true;
                     _deleteItemIndex = _buildListSelected;
@@ -291,14 +291,14 @@ namespace AutoDuty.Windows
                 }
 
                 ImGui.SameLine();
-                if (ImGuiEx.ButtonWrapped("Copy to Clipboard".Loc()))
+                if (ImGuiEx.ButtonWrapped(Loc.Get("BuildTab.CopyToClipboard")))
                     ImGui.SetClipboardText(_action?.ToCustomString());
                 if (Plugin.isDev)
                 {
                     ImGui.SameLine();
                     using (ImRaii.Disabled(!Player.Available || _action == null))
                     {
-                        if (ImGuiEx.ButtonWrapped("Teleport To".Loc()))
+                        if (ImGuiEx.ButtonWrapped(Loc.Get("BuildTab.TeleportTo")))
                             Player.GameObject->SetPosition(_action!.Position.X, _action.Position.Y, _action.Position.Z);
                     }
                 }
@@ -306,7 +306,7 @@ namespace AutoDuty.Windows
             if (!(_noArgument || _comment))
             {
                 ImGui.AlignTextToFramePadding();
-                ImGui.TextColored(_argumentTextColor, "Arguments:".Loc());
+                ImGui.TextColored(_argumentTextColor, Loc.Get("BuildTab.Arguments"));
                 ImGui.SameLine();
                 ImGui.TextColored(_argumentTextColor, _argumentHint);
                 ImGui.SameLine();
@@ -361,7 +361,7 @@ namespace AutoDuty.Windows
 
             if (!_comment)
             {
-                if (ImGui.Button("Position:".Loc()))
+                if (ImGui.Button(Loc.Get("BuildTab.Position")))
                     _position = (_position - Player.Position).LengthSquared() <= 0.1f ? Vector3.Zero : Player.Position;
 
                 ImGui.SameLine();
@@ -376,14 +376,14 @@ namespace AutoDuty.Windows
 
             }
             ImGui.AlignTextToFramePadding();
-            ImGui.Text("Note:".Loc());
+            ImGui.Text(Loc.Get("BuildTab.Note"));
             ImGui.SameLine();
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
             ImGui.InputText("##Note", ref _note, 200);
             using (ImRaii.Disabled(_action == null || _action.Tag.HasAnyFlag(ActionTag.Comment, ActionTag.Revival, ActionTag.Treasure)))
             {
                 ImGui.AlignTextToFramePadding();
-                ImGui.Text("Tag:".Loc());
+                ImGui.Text(Loc.Get("BuildTab.Tag"));
                 ImGui.SameLine();
                 ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
                 if (ImGui.BeginCombo("##TagSelection", _actionTag.HasAnyFlag(ActionTag.None, ActionTag.Synced, ActionTag.Unsynced) ? _actionTag.ToCustomString() : ActionTag.None.ToCustomString()))
@@ -442,7 +442,7 @@ namespace AutoDuty.Windows
                                 _buildListSelected = item.Index;
                                 _showAddActionUI   = true;
                                 _dropdownSelected  = ("", "", "");
-                                _addActionButton   = "Modify";
+                                _addActionButton   = Loc.Get("BuildTab.Modify");
                                 _action            = item.Value;
                                 _actionTag         = item.Value.Tag;
                             }
@@ -509,7 +509,7 @@ namespace AutoDuty.Windows
                     }
                 }
                 else
-                    ImGuiEx.TextWrapped(new Vector4(0, 1, 0, 1), "You must enter a dungeon to Build a Path".Loc());
+                    ImGuiEx.TextWrapped(new Vector4(0, 1, 0, 1), Loc.Get("BuildTab.NotInDungeonMessage"));
             }
             catch (Exception ex) { Svc.Log.Error(ex.ToString()); }
             if (_scrollBottom)
@@ -531,7 +531,7 @@ namespace AutoDuty.Windows
             _dontMove = false;
             _showAddActionUI = false;
             _noArgument = false;
-            _addActionButton = "Add";
+            _addActionButton = Loc.Get("BuildTab.Add");
             _buildListSelected = -1;
             _action = null;
             _comment = false;

@@ -1,0 +1,36 @@
+{
+  "MainWindow": {
+    "Tabs": {
+      "Main": "主頁",
+      "Build": "建構",
+      "Paths": "路徑",
+      "Config": "設定",
+      "Info": "資訊",
+      "Logs": "日誌",
+      "Stats": "統計",
+      "Support": "支持 AutoDuty"
+    },
+    "Goto": {
+      "Barracks": "軍營",
+      "Inn": "旅館",
+      "GCSupply": "軍隊籌備",
+      "FlagMarker": "地圖標記",
+      "SummoningBell": "傳喚鈴",
+      "Apartment": "公寓",
+      "PersonalHome": "個人房屋",
+      "FCEstate": "部隊房屋",
+      "TripleTriadTrader": "九宮幻卡兌換員"
+    },
+    "TT": {
+      "RegisterCards": "自動收錄九宮幻卡",
+      "SellCards": "出售多餘九宮幻卡"
+    },
+    "SupportKofi": "在 Ko-fi 上支持 Herculezz",
+    "OK": "確定",
+    "Staging": {
+      "NotSupported": "不支援 STAGING 版本。",
+      "PickRelease": "請輸入「/xlbranch」並選擇 Release，然後重新啟動遊戲。",
+      "UseAnyway": "仍要在 staging 上使用（將不提供支援）"
+    }
+  }
+}

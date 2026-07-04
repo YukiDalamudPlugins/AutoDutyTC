@@ -40,7 +40,9 @@
    </ItemGroup>
 
    <ItemGroup>
-     <None Include="LanguageChineseTraditional.ini" CopyToOutputDirectory="PreserveNewest" />
+     <Content Include="Localization\**\*.json">
+       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+     </Content>
    </ItemGroup>
 
   <ItemGroup>

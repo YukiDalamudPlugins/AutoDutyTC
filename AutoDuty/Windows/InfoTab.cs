@@ -1,5 +1,4 @@
 ﻿using ECommons.ImGuiMethods;
-using ECommons.LanguageHelpers;
 using ImGuiNET;
 using System.Diagnostics;
 
@@ -18,25 +17,25 @@ namespace AutoDuty.Windows
             if (MainWindow.CurrentTabName != "Info")
                 MainWindow.CurrentTabName = "Info";
             ImGui.NewLine();
-            ImGuiEx.TextWrapped("For assistance with general setup for both AutoDuty and it's dependencies, be sure to check out the setup guide below for more information:".Loc());
+            ImGuiEx.TextWrapped(Loc.Get("InfoTab.SetupGuideIntro"));
             ImGui.NewLine();
-            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize("Information and Setup".Loc()).X) / 2);
-            if (ImGui.Button("Information and Setup".Loc()))
+            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(Loc.Get("InfoTab.InformationAndSetup")).X) / 2);
+            if (ImGui.Button(Loc.Get("InfoTab.InformationAndSetup")))
                 Process.Start("explorer.exe", infoUrl);
             ImGui.NewLine();
-            ImGuiEx.TextWrapped("The above guide also has information on the status of each path, such as Path maturity, module maturity, and general consistency of each path. You can also review additional notes or considerations, that may need to be made on your part for successful looping. For requests, issues, or contributions to AD, please use the AutoDuty Github to open an issue:".Loc());
+            ImGuiEx.TextWrapped(Loc.Get("InfoTab.PathStatusInfo"));
             ImGui.NewLine();
-            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize("GitHub Issues".Loc()).X) / 2);
-            if (ImGui.Button("GitHub Issues".Loc()))
+            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(Loc.Get("InfoTab.GitHubIssues")).X) / 2);
+            if (ImGui.Button(Loc.Get("InfoTab.GitHubIssues")))
                 Process.Start("explorer.exe", gitIssueUrl);
             ImGui.NewLine();
-            ImGuiEx.TextCentered("For everything else, join the discord!".Loc());
+            ImGuiEx.TextCentered(Loc.Get("InfoTab.DiscordInvite"));
             ImGui.NewLine();
-            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize("Punish Discord".Loc()).X) / 2);
-            if (ImGui.Button("Punish Discord".Loc()))
+            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(Loc.Get("InfoTab.PunishDiscord")).X) / 2);
+            if (ImGui.Button(Loc.Get("InfoTab.PunishDiscord")))
                 Process.Start("explorer.exe", punishDiscordUrl);
-            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize("FFXIVCode Discord".Loc()).X) / 2);
-            if (ImGui.Button("FFXIVCode Discord".Loc()))
+            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(Loc.Get("InfoTab.FFXIVCodeDiscord")).X) / 2);
+            if (ImGui.Button(Loc.Get("InfoTab.FFXIVCodeDiscord")))
                 Process.Start("explorer.exe", ffxivcodeDiscordUrl);
         }
     }

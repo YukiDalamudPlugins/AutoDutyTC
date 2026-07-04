@@ -2,7 +2,6 @@
 using Dalamud.Interface.Utility.Raii;
 using ECommons;
 using ECommons.ImGuiMethods;
-using ECommons.LanguageHelpers;
 using ECommons.Throttlers;
 using ImGuiNET;
 using Serilog.Events;
@@ -51,22 +50,22 @@ namespace AutoDuty.Windows
                 _whatHappenedInput = string.Empty;
             }
             ImGuiEx.Spacing();
-            if (ImGui.Checkbox("Auto Scroll".Loc(), ref Plugin.Configuration.AutoScroll))
+            if (ImGui.Checkbox(Loc.Get("LogTab.AutoScroll"), ref Plugin.Configuration.AutoScroll))
                 Plugin.Configuration.Save();
             ImGui.SameLine();
             if (ImGuiEx.IconButton(Dalamud.Interface.FontAwesomeIcon.Trash))
                 Plugin.DalamudLogEntries.Clear();
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Clear log".Loc());
+                ImGui.SetTooltip(Loc.Get("LogTab.ClearLog"));
             ImGui.SameLine();
             if (ImGuiEx.IconButton(Dalamud.Interface.FontAwesomeIcon.Copy))
                 ImGui.SetClipboardText(Plugin.DalamudLogEntries.SelectMulti(x => x.Message).ToList().ToCustomString("\n"));
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Copy entire log to clipboard".Loc());
+                ImGui.SetTooltip(Loc.Get("LogTab.CopyLog"));
             ImGui.SameLine();
             using (ImRaii.Disabled(!_taskUserCode?.IsCompletedSuccessfully ?? false))
             {
-                if (ImGui.Button("Create Issue".Loc()))
+                if (ImGui.Button(Loc.Get("LogTab.CreateIssue")))
                 {
                     if (_pollResponse == null || _pollResponse.Access_Token.IsNullOrEmpty())
                     {
@@ -81,7 +80,7 @@ namespace AutoDuty.Windows
                     }
                     _popupOpen = true;
                     ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetCenter(), ImGuiCond.None, new(0.5f, 0.5f));
-                    ImGui.OpenPopup("Create Issue".Loc() + "###CreateIssuePopup");
+                    ImGui.OpenPopup(Loc.Get("LogTab.CreateIssue") + "###CreateIssuePopup");
                 }
             }
             if (_pollResponse != null && !_pollResponse.Access_Token.IsNullOrEmpty())
@@ -90,7 +89,7 @@ namespace AutoDuty.Windows
                 ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetCenter(), ImGuiCond.None, new(0.5f, 0.5f));
                 _imGuiWindowFlags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
             }    
-            if (ImGui.BeginPopupModal("Create Issue".Loc() + "###CreateIssuePopup", ref _popupOpen, _imGuiWindowFlags))
+            if (ImGui.BeginPopupModal(Loc.Get("LogTab.CreateIssue") + "###CreateIssuePopup", ref _popupOpen, _imGuiWindowFlags))
             {
                 _clearedDataAfterPopupClose = false;
                 if (_pollResponse == null || _pollResponse.Access_Token.IsNullOrEmpty())
@@ -100,7 +99,7 @@ namespace AutoDuty.Windows
                 ImGui.EndPopup();
             }
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Click to open the Create Issue popup (after authenticating with github) to fill in the form and submit and issue to the Repo".Loc());
+                ImGui.SetTooltip(Loc.Get("LogTab.CreateIssueTooltip"));
             ImGui.SameLine();
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
             if (ImGuiEx.EnumCombo("##LogEventLevel", ref Plugin.Configuration.LogEventLevel))
@@ -111,12 +110,12 @@ namespace AutoDuty.Windows
             }
 
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Filter log event level".Loc());
+                ImGui.SetTooltip(Loc.Get("LogTab.FilterLogLevel"));
             ImGuiEx.Spacing();
 
             if (Plugin.Configuration.LogEventLevel < LogEventLevel.Information)
             {
-                ImGui.TextWrapped("AutoDuty can't change the log level dalamud uses. To see debug related things, you have to go in the dalamud log \"/xllog\" and set the appropriate level in the top left.".Loc());
+                ImGui.TextWrapped(Loc.Get("LogTab.DebugLevelWarning"));
             }
 
             ImGuiEx.Spacing();
@@ -157,11 +156,11 @@ namespace AutoDuty.Windows
                     if ((_pollResponse == null || _pollResponse.Access_Token.IsNullOrEmpty()) && EzThrottler.Throttle("Polling", _pollResponse != null && _pollResponse.Interval != -1 ? _pollResponse.Interval * 1100 : _userCode!.Interval * 1100))
                         _taskPollResponse = Task.Run(() => PollResponse(_userCode));
                 }
-                ImGui.TextColored(ImGuiColors.HealerGreen, $"{"Polling Github for User Authorization:".Loc()} {(_pollResponse != null ? (_pollResponse.Access_Token.IsNullOrEmpty() ? $"{_pollResponse.Error}" : $"{_pollResponse.Access_Token}") : "")}");
+                ImGui.TextColored(ImGuiColors.HealerGreen, Loc.Get("LogTab.Auth.PollingGithub", (_pollResponse != null ? (_pollResponse.Access_Token.IsNullOrEmpty() ? $"{_pollResponse.Error}" : $"{_pollResponse.Access_Token}") : "")));
             }
             else if (_taskUserCode != null && !_taskUserCode.IsCompletedSuccessfully)
             {
-                ImGui.TextColored(new(0, 1, 0, 1), "Waiting for Response from GitHub".Loc());
+                ImGui.TextColored(new(0, 1, 0, 1), Loc.Get("LogTab.Auth.WaitingResponse"));
                 return;
             }
             else if (_taskUserCode != null && _taskUserCode.IsCompletedSuccessfully)
@@ -172,13 +171,13 @@ namespace AutoDuty.Windows
             else if (_userCode != null)
             {
                 ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.ParsedBlue);
-                if (ImGuiEx.Button("Click Here".Loc()))
+                if (ImGuiEx.Button(Loc.Get("LogTab.Auth.ClickHere")))
                 {
                     ImGui.SetClipboardText(_userCode.User_Code);
                     _copied = true;
                 }
                 ImGui.SameLine();
-                ImGui.Text(" to Copy ".Loc());
+                ImGui.Text(Loc.Get("LogTab.Auth.ToCopy"));
                 ImGui.SameLine();
                 ImGui.TextColored(new(0, 1, 0, 1), _userCode.User_Code);
                 if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
@@ -187,10 +186,10 @@ namespace AutoDuty.Windows
                     _copied = true;
                 }
                 ImGui.SameLine();
-                ImGui.Text(" to the ClipBoard and:".Loc());
+                ImGui.Text(Loc.Get("LogTab.Auth.ToClipboard"));
                 using (ImRaii.Disabled(!_copied))
                 {
-                    if (ImGui.Button("Open GitHub".Loc() + "###OpenUri"))
+                    if (ImGui.Button(Loc.Get("LogTab.Auth.OpenGithub") + "###OpenUri"))
                     {
                         GenericHelpers.ShellStart($"https://github.com/login/device");
                         if (EzThrottler.Throttle("Polling", _userCode!.Interval * 1100))
@@ -198,7 +197,7 @@ namespace AutoDuty.Windows
                     }
                     ImGui.PopStyleColor();
                     ImGui.SameLine();
-                    ImGui.Text(" in your browser and Paste it".Loc());
+                    ImGui.Text(Loc.Get("LogTab.Auth.InBrowserPaste"));
                 }
             }
         }
@@ -207,7 +206,7 @@ namespace AutoDuty.Windows
         {
             if (_taskSubmitIssue != null && !_taskSubmitIssue.IsCompletedSuccessfully)
             {
-                ImGui.TextColored(ImGuiColors.HealerGreen, "Submitting Issue".Loc());
+                ImGui.TextColored(ImGuiColors.HealerGreen, Loc.Get("LogTab.IssueForm.Submitting"));
                 return;
             }
             else if (_taskSubmitIssue != null && _taskSubmitIssue.IsCompletedSuccessfully)
@@ -216,34 +215,34 @@ namespace AutoDuty.Windows
                 ImGui.CloseCurrentPopup();
                 return;
             }
-            ImGui.Text("Issue: Bug Report".Loc());
+            ImGui.Text(Loc.Get("LogTab.IssueForm.Title"));
             ImGui.Separator();
-            ImGui.Text("Add a title".Loc());
+            ImGui.Text(Loc.Get("LogTab.IssueForm.AddTitle"));
             ImGui.SameLine(0, 5);
             ImGui.TextColored(ImGuiColors.DalamudRed, "*");
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
             ImGui.InputText("##TitleInput", ref _titleInput, 500);
             ImGui.Separator();
             ImGui.NewLine();
-            ImGui.TextWrapped("Please make sure someone else hasn't reported the same bug by going to the issues page and searching for a similar issue. If you find a similar issue, please react to the initial post with 👍 to increase its priority.".Loc());
+            ImGui.TextWrapped(Loc.Get("LogTab.IssueForm.DuplicateWarning"));
             if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                 GenericHelpers.ShellStart("https://github.com/ffxivcode/AutoDuty/issues");
             ImGui.NewLine();
-            ImGui.TextWrapped("What Happened?".Loc());
+            ImGui.TextWrapped(Loc.Get("LogTab.IssueForm.WhatHappened"));
             ImGui.SameLine(0, 5);
             ImGui.TextColored(ImGuiColors.DalamudRed, "*"); 
-            ImGui.TextWrapped("Also, what did you expect to happen? Please put any screenshots you can share here as well.".Loc());
+            ImGui.TextWrapped(Loc.Get("LogTab.IssueForm.WhatHappenedHelp"));
             ImGui.InputTextMultiline("##WhatHappenedInput", ref _whatHappenedInput, 500, new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y / 2.5f));
             ImGui.NewLine();
-            ImGui.TextWrapped("Steps to reproduce the error".Loc());
+            ImGui.TextWrapped(Loc.Get("LogTab.IssueForm.ReproSteps"));
             ImGui.SameLine(0, 5);
             ImGui.TextColored(ImGuiColors.DalamudRed, "*");
-            ImGui.TextWrapped("List all of the steps we can take to reproduce this error.".Loc());
+            ImGui.TextWrapped(Loc.Get("LogTab.IssueForm.ReproStepsHelp"));
             ImGui.InputTextMultiline("##ReproStepsInput", ref _reproStepsInput, 500, new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y - (ImGui.CalcTextSize("Submit Issue").Y * 3)));
             ImGui.NewLine();
             using (ImRaii.Disabled(_titleInput.Equals("[Bug] ") || _whatHappenedInput.IsNullOrEmpty() || _reproStepsInput.IsNullOrEmpty()))
             {
-                if (ImGui.Button("Submit Issue".Loc()))
+                if (ImGui.Button(Loc.Get("LogTab.IssueForm.Submit")))
                 {
                     if (_pollResponse != null)
                     {
