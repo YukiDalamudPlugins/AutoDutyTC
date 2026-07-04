@@ -907,7 +907,7 @@ public static class ConfigTab
             ImGui.Separator();
             ImGui.Spacing();
             ImGui.PushStyleVar(ImGuiStyleVar.SelectableTextAlign, new Vector2(0.5f, 0.5f));
-            var devHeader = ImGui.Selectable("Dev Settings", devHeaderSelected, ImGuiSelectableFlags.DontClosePopups);
+            var devHeader = ImGui.Selectable("Dev Settings".Loc(), devHeaderSelected, ImGuiSelectableFlags.DontClosePopups);
             ImGui.PopStyleVar();
             if (ImGui.IsItemHovered())
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
@@ -916,13 +916,13 @@ public static class ConfigTab
 
             if (devHeaderSelected)
             {
-                if (ImGui.Checkbox("Update Paths on startup", ref ConfigurationMain.Instance.updatePathsOnStartup))
+                if (ImGui.Checkbox("Update Paths on startup".Loc(), ref ConfigurationMain.Instance.updatePathsOnStartup))
                     Configuration.Save();
 
-                if (ImGui.Button("Print mod list")) 
+                if (ImGui.Button("Print mod list".Loc()))
                     Svc.Log.Info(string.Join("\n", PluginInterface.InstalledPlugins.Where(pl => pl.IsLoaded).GroupBy(pl => pl.Manifest.InstalledFromUrl).OrderByDescending(g => g.Count()).Select(g => g.Key+"\n\t"+string.Join("\n\t", g.Select(pl => pl.Name)))));
 
-                if (ImGui.CollapsingHeader("Available Duty Support"))//ImGui.Button("check duty support?"))
+                if (ImGui.CollapsingHeader("Available Duty Support".Loc() + "###AvailableDutySupport"))//ImGui.Button("check duty support?"))
                 {
                     if(GenericHelpers.TryGetAddonMaster<AddonMaster.DawnStory>(out AddonMaster.DawnStory? m))
                     {
@@ -943,7 +943,7 @@ public static class ConfigTab
                     }
                 }
 
-                if (ImGui.CollapsingHeader("Available TT cards"))
+                if (ImGui.CollapsingHeader("Available TT cards".Loc() + "###AvailableTTCards"))
                 {
                     unsafe
                     {
@@ -969,29 +969,29 @@ public static class ConfigTab
 
 
 
-                if (ImGui.Button("Turn on rotation"))
+                if (ImGui.Button("Turn on rotation".Loc()))
                 {
                     Plugin.SetRotationPluginSettings(true, ignoreTimer: true);
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button("Turn off rotation"))
+                if (ImGui.Button("Turn off rotation".Loc()))
                 {
                     Plugin.SetRotationPluginSettings(false);
                     if(Wrath_IPCSubscriber.IsEnabled)
                         Wrath_IPCSubscriber.Release();
                 }
 
-                if (ImGui.Button("BetweenLoopActions##DevBetweenLoops"))
+                if (ImGui.Button("BetweenLoopActions".Loc() + "##DevBetweenLoops"))
                 {
                     Plugin.CurrentTerritoryContent =  ContentHelper.DictionaryContent.Values.First();
                     Plugin.States                  |= PluginState.Other;
                     Plugin.LoopTasks(false);
                 }
 
-                if (ImGui.CollapsingHeader("teleport playthings"))
+                if (ImGui.CollapsingHeader("teleport playthings".Loc() + "###TeleportPlaythings"))
                 {
-                    if (ImGui.CollapsingHeader("Warps"))
+                    if (ImGui.CollapsingHeader("Warps".Loc() + "###DevWarps"))
                     {
                         ImGui.Indent();
                         foreach (Warp warp in Svc.Data.GameData.GetExcelSheet<Warp>())
@@ -1012,7 +1012,7 @@ public static class ConfigTab
                         ImGui.Unindent();
                     }
 
-                    if (ImGui.CollapsingHeader("LevelTest"))
+                    if (ImGui.CollapsingHeader("LevelTest".Loc() + "###DevLevelTest"))
                     {
                         foreach ((Level lvl, Vector3, Vector3) level in Svc.Data.GameData.GetExcelSheet<Level>().Where(lvl => lvl.Territory.RowId == 152)
                                                                            .Select(lvl => (lvl, (new Vector3(lvl.X, lvl.Y, lvl.Z))))
