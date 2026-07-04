@@ -1,57 +1,82 @@
-name: Build & Publish to Dynamis Latest
+name: Publish
+
+# Release workflow for the TC build. Push a 4-part tag (e.g. 0.0.0.228) on the `tc`
+# branch and this builds the plugin against the TC (API 12) Dalamud and attaches the
+# packaged zip + pluginmaster.json to a GitHub Release.
+#
+# The TC client uses XIVTheCalamity's Dalamud fork (API 12), NOT goatcorp's global
+# latest. We download that exact distribution and point the build at it via
+# DALAMUD_HOME (the csproj maps DALAMUD_HOME -> DalamudLibPath on Linux). Building on
+# Linux for the net9.0-windows target needs EnableWindowsTargeting=true.
 
 on:
-  release:
-    types: [released]
+  push:
+    tags:
+      - '*.*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # API 12 Dalamud for the TC region (XIVTheCalamity / PlusoneChiang fork).
+  # Bump this when the TC client's Dalamud version changes.
+  DALAMUD_URL: https://github.com/PlusoneChiang/Dalamud/releases/download/12.0.1.5-tc.18/dalamud-tc-12.0.1.5-tc.18.zip
+  EnableWindowsTargeting: 'true'
 
 jobs:
-  Build:
+  build:
     runs-on: ubuntu-latest
-    env:
-      DALAMUD_HOME: /tmp/dalamud
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: true
-          
+          submodules: recursive
+
+      - name: Resolve version
+        run: |
+          if [ "${GITHUB_REF}" != "${GITHUB_REF#refs/tags/}" ]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
+          else
+            echo "version=0.0.0.0" >> "$GITHUB_ENV"
+          fi
+
       - name: Set up .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
 
-      - name: Download Dalamud Latest
+      - name: Download TC Dalamud (API 12)
         run: |
-          wget https://goatcorp.github.io/dalamud-distrib/latest.zip -O ${{ env.DALAMUD_HOME }}.zip
-          unzip ${{ env.DALAMUD_HOME }}.zip -d ${{ env.DALAMUD_HOME }}
+          set -euo pipefail
+          mkdir -p "$HOME/dalamud"
+          curl -fsSL "$DALAMUD_URL" -o /tmp/dalamud.zip
+          unzip -q /tmp/dalamud.zip -d "$HOME/dalamud"
+          test -f "$HOME/dalamud/Dalamud.dll" || { echo "Dalamud.dll not found after extract"; ls -la "$HOME/dalamud"; exit 1; }
+          echo "DALAMUD_HOME=$HOME/dalamud" >> "$GITHUB_ENV"
 
-      - name: Restore Project
-        run: dotnet restore
+      - name: Build plugin
+        run: |
+          dotnet build AutoDuty/AutoDuty.csproj -c Release \
+            -p:Version=${{ env.version }} \
+            -p:AssemblyVersion=${{ env.version }} \
+            -p:FileVersion=${{ env.version }}
 
-      - name: Build Project
-        run: dotnet build --configuration Release AutoDuty/AutoDuty.csproj -p:AssemblyVersion=${{ github.ref_name }}
+      - name: Generate pluginmaster.json
+        run: |
+          set -euo pipefail
+          manifest=AutoDuty/bin/Release/AutoDuty/AutoDuty.json
+          dl="https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/latest.zip"
+          jq --arg dl "$dl" --arg v "${{ env.version }}" \
+            '. + {AssemblyVersion:$v, DownloadLinkInstall:$dl, DownloadLinkUpdate:$dl, DownloadLinkTesting:$dl, IsHide:false, IsTestingExclusive:false, DownloadCount:0} | [.]' \
+            "$manifest" > pluginmaster.json
+          cat pluginmaster.json
 
-      - name: Publish Version
-        uses: PunishXIV/dynamis-action@v1
-        id: dynamis
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
         with:
-          plugin_id: 54
-          internal_name: "AutoDuty"
-          version_number: ${{ github.ref_name }}
-          path: "AutoDuty/bin/Release/AutoDuty/latest.zip"
-          type: "latest"
-          dalamud_version: "12"
-          changelog: ${{ github.event.release.body }}
-        env:
-          PUBLISHER_KEY: ${{ secrets.PUBLISHER_KEY }}
-
-      - name: Github Releases To Discord
-        uses: SethCohen/github-releases-to-discord@v1.15.0
-        with:
-          webhook_url: ${{ secrets.WEBHOOK_URL }}
-          color: "2105893"
-          username: "Release Changelog"
-          avatar_url: "https://s3.puni.sh/media/plugin/54/icon-15ug2vnr9m1.png"
-          footer_title: "Changelog"
-          footer_icon_url: "https://s3.puni.sh/media/plugin/54/icon-15ug2vnr9m1.png"
-          footer_timestamp: true
+          files: |
+            AutoDuty/bin/Release/AutoDuty/latest.zip
+            pluginmaster.json
+          token: ${{ secrets.GITHUB_TOKEN }}
